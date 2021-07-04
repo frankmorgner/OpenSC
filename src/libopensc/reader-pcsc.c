@@ -2157,6 +2157,21 @@ part10_check_pin_min_max(sc_reader_t *reader, struct sc_pin_cmd_data *data)
 	return 0;
 }
 
+static void disable_reinersct_pinpad_dialog(sc_reader_t *reader)
+{
+       char in[] = {0x02};
+       char out[128];
+       DWORD lenOut = 0;
+       struct pcsc_private_data *priv = reader->drv_data;
+
+       if (priv && priv->gpriv && priv->gpriv->SCardControl) {
+               PCSC_TRACE(reader, "Disable Reiner SCT PIN pad dialog (SCardControl)",
+                               priv->gpriv->SCardControl(priv->pcsc_card,
+                                       (DWORD) SCARD_CTL_CODE(3105),
+                                       in, 1, out, sizeof(out),&lenOut));
+       }
+}
+
 /* Do the PIN command */
 static int
 pcsc_pin_cmd(sc_reader_t *reader, struct sc_pin_cmd_data *data)
@@ -2211,6 +2226,8 @@ pcsc_pin_cmd(sc_reader_t *reader, struct sc_pin_cmd_data *data)
 		sc_log(reader->ctx, "Unknown PIN command %d", data->cmd);
 		return SC_ERROR_NOT_SUPPORTED;
 	}
+
+	disable_reinersct_pinpad_dialog(reader);
 
 	/* If PIN block building failed, we fail too */
 	LOG_TEST_RET(reader->ctx, r, "PC/SC v2 pinpad block building failed!");
