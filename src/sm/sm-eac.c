@@ -414,7 +414,7 @@ static int format_mse_cdata(struct sc_context *ctx, int protocol,
 	}
 
 	if (protocol) {
-		data->cryptographic_mechanism_reference = OBJ_nid2obj(protocol);
+		data->cryptographic_mechanism_reference = EAC_OBJ_nid2obj(protocol);
 		if (!data->cryptographic_mechanism_reference) {
 			sc_debug(ctx, SC_LOG_DEBUG_VERBOSE, "Error setting Cryptographic mechanism reference of MSE:Set AT data");
 			r = SC_ERROR_INTERNAL;

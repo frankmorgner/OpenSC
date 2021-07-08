@@ -705,7 +705,7 @@ fi
 
 
 
-PKG_CHECK_EXISTS([libeac], [PKG_CHECK_MODULES([OPENPACE], [libeac >= 0.9])],
+PKG_CHECK_EXISTS([libeac], [PKG_CHECK_MODULES([OPENPACE], [libeac >= 1.1.2])],
                  [AC_MSG_WARN([libeac not found by pkg-config])])
 
 saved_CPPFLAGS="$CPPFLAGS"
@@ -717,8 +717,8 @@ have_openpace="yes"
 AC_CHECK_HEADERS(eac/eac.h, [],
                  [ AC_MSG_WARN([OpenPACE headers not found])
                  have_openpace="no" ])
-AC_MSG_CHECKING([for EAC_CTX_init_pace])
-AC_TRY_LINK_FUNC(EAC_CTX_init_pace, [ AC_MSG_RESULT([yes]) ],
+AC_MSG_CHECKING([for EAC_OBJ_nid2obj])
+AC_TRY_LINK_FUNC(EAC_OBJ_nid2obj, [ AC_MSG_RESULT([yes]) ],
                  [ AC_MSG_WARN([Cannot link against libeac])
                  have_openpace="no" ])
 
