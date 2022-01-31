@@ -7,6 +7,8 @@ platform:
 configuration:
   - Release
   - Light
+  - Light-arm64
+  - Light-arm
 
 environment:
   GH_TOKEN:
@@ -24,8 +26,8 @@ environment:
   - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2017
     VCVARSALL: "%ProgramFiles(x86)%/Microsoft Visual Studio/2017/Community/VC/Auxiliary/Build/vcvarsall.bat"
   # not compatible with WiX 3.11.2:
-  # - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2019
-  #   VCVARSALL: "%ProgramFiles(x86)%/Microsoft Visual Studio/2019/Community/VC/Auxiliary/Build/vcvarsall.bat"
+   - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2019
+     VCVARSALL: "%ProgramFiles(x86)%/Microsoft Visual Studio/2019/Community/VC/Auxiliary/Build/vcvarsall.bat"
 
 install:
   - ps: if ($env:APPVEYOR_PULL_REQUEST_NUMBER -and $env:APPVEYOR_BUILD_NUMBER -ne ((Invoke-RestMethod `
@@ -36,11 +38,21 @@ install:
   - ps: $env:PACKAGE_NAME=(git describe --tags --abbrev=0)
   - ps: >-
       If ($env:Platform -Match "x86") {
-        $env:OPENSSL_PF="Win32"
-        $env:ARTIFACT="OpenSC-${env:PACKAGE_NAME}_win32"
+        If ($env:Configuration -Like "*arm") {
+          $env:ARTIFACT="OpenSC-${env:PACKAGE_NAME}_win-arm"
+          $env:Platform="x86_arm"
+        } Else {
+          $env:OPENSSL_PF="Win32"
+          $env:ARTIFACT="OpenSC-${env:PACKAGE_NAME}_win32"
+        }
       } Else {
-        $env:OPENSSL_PF="Win64"
-        $env:ARTIFACT="OpenSC-${env:PACKAGE_NAME}_win64"
+        If ($env:Configuration -Like "*arm64") {
+          $env:ARTIFACT="OpenSC-${env:PACKAGE_NAME}_win-arm64"
+          $env:Platform="x64_arm64"
+        } Else {
+          $env:OPENSSL_PF="Win64"
+          $env:ARTIFACT="OpenSC-${env:PACKAGE_NAME}_win64"
+        }
       }
   - ps: >-
       If ($env:Configuration -Like "*Light*") {
