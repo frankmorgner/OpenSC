@@ -5,9 +5,6 @@ platform:
   - x64
 
 configuration:
-  - Release
-  - Light
-  - Light-arm64
   - Light-arm
 
 environment:
@@ -46,7 +43,7 @@ install:
           $env:ARTIFACT="OpenSC-${env:PACKAGE_NAME}_win32"
         }
       } Else {
-        If ($env:Configuration -Like "*arm64") {
+        If ($env:Configuration -Like "*arm") {
           $env:ARTIFACT="OpenSC-${env:PACKAGE_NAME}_win-arm64"
           $env:Platform="x64_arm64"
         } Else {
