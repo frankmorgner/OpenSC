@@ -43,6 +43,9 @@ extern "C" {
 #ifdef ENABLE_SM
 #include "libopensc/sm.h"
 #endif
+#ifdef ENABLE_OPENSSL
+#include "sc-ossl-compat.h"
+#endif
 
 #if defined(_WIN32) && !(defined(__MINGW32__) && defined (__MINGW_PRINTF_FORMAT))
 #define SC_FORMAT_LEN_SIZE_T "I"
@@ -888,6 +891,10 @@ typedef struct sc_context {
 
 	sc_thread_context_t	*thread_ctx;
 	void *mutex;
+
+#ifdef USE_OPENSSL3_LIBCTX
+	ossl3ctx_t ossl3ctx;
+#endif
 
 	unsigned int magic;
 } sc_context_t;
