@@ -696,7 +696,8 @@ static int dnie_get_root_ca_pubkey(sc_card_t * card, EVP_PKEY ** root_ca_key)
 	OSSL_PARAM_BLD *bld = NULL;
 	OSSL_PARAM *params = NULL;
 
-	ctx = EVP_PKEY_CTX_new_from_name(card->ctx->ossl3ctx.libctx, "RSA", NULL);
+	ossl3ctx_t ossl3ctx = card->ctx->ossl3ctx;
+	ctx = EVP_PKEY_CTX_new_from_name(ossl3ctx->libctx, "RSA", NULL);
 	if (!ctx) {
 #endif
 		sc_log(card->ctx, "Cannot create data for root CA public key");
@@ -893,9 +894,10 @@ static int dnie_get_privkey(sc_card_t * card, EVP_PKEY ** ifd_privkey,
 	OSSL_PARAM_BLD *bld = NULL;
 	OSSL_PARAM *params = NULL;
 	EVP_PKEY_CTX *ctx = NULL;
+	ossl3ctx_t ossl3ctx = card->ctx->ossl3ctx;
 
 	LOG_FUNC_CALLED(card->ctx);
-	ctx = EVP_PKEY_CTX_new_from_name(card->ctx->ossl3ctx.libctx, "RSA", NULL);
+	ctx = EVP_PKEY_CTX_new_from_name(ossl3ctx->libctx, "RSA", NULL);
 
 	if (!ctx) { 
 #endif

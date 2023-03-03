@@ -429,7 +429,8 @@ aes128_encrypt_cmac(struct sc_card *card, const unsigned char *key, int keysize,
 err:
 	CMAC_CTX_free(ctx);
 #else
-	EVP_MAC *mac = EVP_MAC_fetch(card->ctx->ossl3ctx.libctx, "cmac", NULL);
+	ossl3ctx_t ossl3ctx = card->ctx->ossl3ctx;
+	EVP_MAC *mac = EVP_MAC_fetch(ossl3ctx->libctx, "cmac", NULL);
 	if(mac == NULL){    
 		return r;
 	}

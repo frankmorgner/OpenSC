@@ -807,33 +807,46 @@ int sc_context_repair(sc_context_t **ctx_out)
 #ifdef USE_OPENSSL3_LIBCTX
 static int sc_openssl3_init(sc_context_t *ctx)
 {
-	ctx->ossl3ctx.libctx = OSSL_LIB_CTX_new();
-	if (ctx->ossl3ctx.libctx == NULL) {
-		return SC_ERROR_INTERNAL;
-	}
-	ctx->ossl3ctx.defprov = OSSL_PROVIDER_load(ctx->ossl3ctx.libctx,
-						   "default");
-	if (ctx->ossl3ctx.defprov == NULL) {
-		OSSL_LIB_CTX_free(ctx->ossl3ctx.libctx);
-		ctx->ossl3ctx.libctx = NULL;
-		return SC_ERROR_INTERNAL;
-	}
-	ctx->ossl3ctx.legacyprov = OSSL_PROVIDER_load(ctx->ossl3ctx.libctx,
-						      "legacy");
-	if (ctx->ossl3ctx.legacyprov == NULL) {
+	int r = SC_ERROR_INTERNAL;
+
+	ossl3ctx_t *ossl3ctx;
+
+	if (!ctx || (ossl3ctx = calloc(sizeof ossl3ctx)) == NULL
+			|| (ossl3ctx->libctx = OSSL_LIB_CTX_new()) == NULL
+			|| (ossl3ctx->defprov = OSSL_PROVIDER_load(ossl3ctx->libctx,
+						   "default")) == NULL)
+		goto err;
+
+	if ((ossl3ctx->legacyprov = OSSL_PROVIDER_load(ossl3ctx->libctx, "legacy")) == NULL)
 		sc_log(ctx, "Failed to load OpenSSL Legacy provider");
+	
+	ctx->ossl3ctx = ossl3ctx;
+	ossl3ctx = NULL;
+	r = SC_SUCCESS;
+
+err:
+	if (ossl3ctx) {
+		if (ossl3ctx->libctx)
+			OSSL_LIB_CTX_free(ossl3ctx->libctx);
+		free(ossl3ctx);
 	}
-	return SC_SUCCESS;
+
+	return r;
 }
 
 static void sc_openssl3_deinit(sc_context_t *ctx)
 {
-	if (ctx->ossl3ctx.legacyprov) OSSL_PROVIDER_unload(ctx->ossl3ctx.legacyprov);
-	if (ctx->ossl3ctx.defprov) OSSL_PROVIDER_unload(ctx->ossl3ctx.defprov);
-	if (ctx->ossl3ctx.libctx) OSSL_LIB_CTX_free(ctx->ossl3ctx.libctx);
-	ctx->ossl3ctx.legacyprov = NULL;
-	ctx->ossl3ctx.defprov = NULL;
-	ctx->ossl3ctx.libctx = NULL;
+	ossl3ctx_t *ossl3ctx;
+
+	if (!ctx)
+		return;
+
+	ossl3ctx = ctx->ossl3ctx;
+	if (ossl3ctx->legacyprov) OSSL_PROVIDER_unload(ossl3ctx->legacyprov);
+	if (ossl3ctx->defprov) OSSL_PROVIDER_unload(ossl3ctx->defprov);
+	if (ossl3ctx->libctx) OSSL_LIB_CTX_free(ossl3ctx->libctx);
+	free(ossl3ctx);
+	ctx->ossl3ctx = NULL;
 }
 #endif
 

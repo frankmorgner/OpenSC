@@ -1195,7 +1195,8 @@ static int westcos_sign_decipher(int mode, sc_card_t *card,
 #if OPENSSL_VERSION_NUMBER < 0x30000000L
 	if (!(pkey = d2i_PrivateKey_bio(mem, NULL))) {
 #else
-	if (!(pkey = d2i_PrivateKey_ex_bio(mem, NULL, card->ctx->ossl3ctx.libctx, NULL))) {
+	ossl3ctx_t ossl3ctx = card->ctx->ossl3ctx;
+	if (!(pkey = d2i_PrivateKey_ex_bio(mem, NULL, ossl3ctx->libctx, NULL))) {
 #endif
 		sc_log(card->ctx, 
 			"RSA key invalid, %lu\n", ERR_get_error());
