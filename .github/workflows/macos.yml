@@ -37,8 +37,9 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: opensc-build-${{ matrix.os }}
-          path:
+          path: |
             OpenSC*.dmg
+            opensc*.tar.gz
       - run: .github/cleanup-macos.sh
         env:
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
