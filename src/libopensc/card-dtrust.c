@@ -56,6 +56,19 @@ static const struct sc_atr_table dtrust_atrs[] = {
 	 * as it is identical to that of CardOS v5.4 and therefore already included.
 	 * Any new ATR may need an entry in minidriver_registration[]. */
 	{ "3b:d2:18:00:81:31:fe:58:c9:04:11", NULL, NULL, SC_CARD_TYPE_DTRUST_V4_1_STD, 0, NULL },
+
+
+	/* D-Trust Signature Card v5.1 and v5.4 - CardOS 6.0
+	 *
+	 * These cards are dual interface cards. Thus they have separate ATRs. */
+
+	/* contact based */
+	{ "3b:d2:18:00:81:31:fe:58:cb:01:16", NULL, NULL, SC_CARD_TYPE_DTRUST_V5_1_STD, 0, NULL },
+
+	/* contactless */
+	{ "3b:82:80:01:cb:01:c9",             NULL, NULL, SC_CARD_TYPE_DTRUST_V5_1_STD, 0, NULL },
+	{ "07:78:77:74:03:cb:01:09",          NULL, NULL, SC_CARD_TYPE_DTRUST_V5_1_STD, 0, NULL },
+
 	{ NULL,                               NULL, NULL, 0,                            0, NULL }
 };
 // clang-format on
@@ -138,18 +151,36 @@ _dtrust_match_profile(sc_card_t *card)
 	 * on the production process, but aren't relevant for determining the
 	 * card profile.
 	 */
-	if (plen >= 27 && !memcmp(pp, "D-TRUST Card 4.1 Std. RSA 2", 27))
-		card->type = SC_CARD_TYPE_DTRUST_V4_1_STD;
-	else if (plen >= 28 && !memcmp(pp, "D-TRUST Card 4.1 Multi ECC 2", 28))
-		card->type = SC_CARD_TYPE_DTRUST_V4_1_MULTI;
-	else if (plen >= 27 && !memcmp(pp, "D-TRUST Card 4.1 M100 ECC 2", 27))
-		card->type = SC_CARD_TYPE_DTRUST_V4_1_M100;
-	else if (plen >= 27 && !memcmp(pp, "D-TRUST Card 4.4 Std. RSA 2", 27))
-		card->type = SC_CARD_TYPE_DTRUST_V4_4_STD;
-	else if (plen >= 28 && !memcmp(pp, "D-TRUST Card 4.4 Multi ECC 2", 28))
-		card->type = SC_CARD_TYPE_DTRUST_V4_4_MULTI;
-	else
-		return SC_ERROR_WRONG_CARD;
+	if (card->type == SC_CARD_TYPE_DTRUST_V4_1_STD)
+	{
+		if (plen >= 27 && !memcmp(pp, "D-TRUST Card 4.1 Std. RSA 2", 27))
+			card->type = SC_CARD_TYPE_DTRUST_V4_1_STD;
+		else if (plen >= 28 && !memcmp(pp, "D-TRUST Card 4.1 Multi ECC 2", 28))
+			card->type = SC_CARD_TYPE_DTRUST_V4_1_MULTI;
+		else if (plen >= 27 && !memcmp(pp, "D-TRUST Card 4.1 M100 ECC 2", 27))
+			card->type = SC_CARD_TYPE_DTRUST_V4_1_M100;
+		else if (plen >= 27 && !memcmp(pp, "D-TRUST Card 4.4 Std. RSA 2", 27))
+			card->type = SC_CARD_TYPE_DTRUST_V4_4_STD;
+		else if (plen >= 28 && !memcmp(pp, "D-TRUST Card 4.4 Multi ECC 2", 28))
+			card->type = SC_CARD_TYPE_DTRUST_V4_4_MULTI;
+		else
+			return SC_ERROR_WRONG_CARD;
+	}
+	else if (card->type == SC_CARD_TYPE_DTRUST_V5_1_STD)
+	{
+		if (plen >= 27 && !memcmp(pp, "D-TRUST Card 5.1 Std. RSA 2", 27))
+			card->type = SC_CARD_TYPE_DTRUST_V5_1_STD;
+		else if (plen >= 28 && !memcmp(pp, "D-TRUST Card 5.1 Multi ECC 2", 28))
+			card->type = SC_CARD_TYPE_DTRUST_V5_1_MULTI;
+		else if (plen >= 27 && !memcmp(pp, "D-TRUST Card 5.1 M100 ECC 2", 27))
+			card->type = SC_CARD_TYPE_DTRUST_V5_1_M100;
+		else if (plen >= 27 && !memcmp(pp, "D-TRUST Card 5.4 Std. RSA 2", 27))
+			card->type = SC_CARD_TYPE_DTRUST_V5_4_STD;
+		else if (plen >= 28 && !memcmp(pp, "D-TRUST Card 5.4 Multi ECC 2", 28))
+			card->type = SC_CARD_TYPE_DTRUST_V5_4_MULTI;
+		else
+			return SC_ERROR_WRONG_CARD;
+	}
 
 	name = malloc(plen + 1);
 	if (name == NULL)
@@ -175,7 +206,7 @@ dtrust_match_card(sc_card_t *card)
 	if (_dtrust_match_profile(card) != SC_SUCCESS)
 		return 0;
 
-	sc_log(card->ctx, "D-Trust Signature Card (CardOS 5.4)");
+	sc_log(card->ctx, "D-Trust Signature Card");
 
 	return 1;
 }
@@ -235,6 +266,8 @@ dtrust_init(sc_card_t *card)
 	switch (card->type) {
 	case SC_CARD_TYPE_DTRUST_V4_1_STD:
 	case SC_CARD_TYPE_DTRUST_V4_4_STD:
+	case SC_CARD_TYPE_DTRUST_V5_1_STD:
+	case SC_CARD_TYPE_DTRUST_V5_4_STD:
 		flags |= SC_ALGORITHM_RSA_PAD_PKCS1;
 		flags |= SC_ALGORITHM_RSA_PAD_PSS;
 		flags |= SC_ALGORITHM_RSA_PAD_OAEP;
@@ -254,6 +287,9 @@ dtrust_init(sc_card_t *card)
 	case SC_CARD_TYPE_DTRUST_V4_1_MULTI:
 	case SC_CARD_TYPE_DTRUST_V4_1_M100:
 	case SC_CARD_TYPE_DTRUST_V4_4_MULTI:
+	case SC_CARD_TYPE_DTRUST_V5_1_MULTI:
+	case SC_CARD_TYPE_DTRUST_V5_1_M100:
+	case SC_CARD_TYPE_DTRUST_V5_4_MULTI:
 		flags |= SC_ALGORITHM_ECDH_CDH_RAW;
 		flags |= SC_ALGORITHM_ECDSA_HASH_SHA256;
 		ext_flags = SC_ALGORITHM_EXT_EC_NAMEDCURVE;
