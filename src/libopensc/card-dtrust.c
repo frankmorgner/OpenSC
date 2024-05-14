@@ -29,6 +29,7 @@
 
 #include "asn1.h"
 #include "internal.h"
+#include "sm/sm-eac.h"
 
 static const struct sc_card_operations *iso_ops = NULL;
 
@@ -469,6 +470,87 @@ err:
 }
 
 static int
+_dtrust_pace_verify(sc_card_t *card, u8 pin_reference, const u8 *pin, size_t pin_length, int *tries_left)
+{
+	int r;
+	struct establish_pace_channel_input pace_input;
+	struct establish_pace_channel_output pace_output;
+
+	memset(&pace_input, 0, sizeof pace_input);
+	memset(&pace_output, 0, sizeof pace_output);
+
+	pace_input.pin_id = pin_reference;
+	pace_input.pin = pin;
+	pace_input.pin_length = pin_length;
+	r = perform_pace(card, pace_input, &pace_output, EAC_TR_VERSION_2_02);
+
+	if (tries_left) {
+		if (pace_output.mse_set_at_sw1 == 0x90 && pace_output.mse_set_at_sw2 == 0x00)
+			*tries_left = 3;
+		if (pace_output.mse_set_at_sw1 == 0x69 && pace_output.mse_set_at_sw2 == 0x83)
+			*tries_left = 0;
+		if (pace_output.mse_set_at_sw1 == 0x63 && (pace_output.mse_set_at_sw2 & 0xC0) == 0xC0)
+			*tries_left = pace_output.mse_set_at_sw2 & 0x0F;
+	}
+	free(pace_output.ef_cardaccess);
+	free(pace_output.recent_car);
+	free(pace_output.previous_car);
+	free(pace_output.id_icc);
+	free(pace_output.id_pcd);
+
+	return r;
+}
+
+#ifndef CAN
+#define CAN "123456"
+#endif
+
+static int
+_dtrust_verify_can(sc_card_t *card)
+{
+	return _dtrust_pace_verify(card, 0x02, (u8 *)CAN, strlen(CAN), NULL);
+}
+
+static int
+dtrust_pin_cmd(struct sc_card *card, struct sc_pin_cmd_data *data, int *tries_left)
+{
+	int r;
+
+	if (card->type == SC_CARD_TYPE_DTRUST_V5_1_STD && data->cmd == SC_PIN_CMD_VERIFY) {
+		switch (data->pin_reference) {
+		/*  <id> = '04' for PUK.CH
+			<id> = '91' for PIN.AUT  */
+			case 0x87:
+				/* PIN.QES */
+			case 0x91:
+				/* PIN.AUT */
+
+				/* verification requires SM channel with PACE+CAN */
+				if (card->sm_ctx.sm_mode != SM_MODE_TRANSMIT) {
+					/* assume that CAN has previously been verified if SM is active. */
+					r = _dtrust_verify_can(card);
+					LOG_TEST_RET(card->ctx, r, "Error verifying CAN.");
+				}
+				break;
+
+			case 0x0B:
+				/* PIN.T */
+			case 0x0C:
+				/* PIN.T.AUT */
+			case 0x04:
+				/* PUK.CH */
+
+				/* verification is done with PACE+<id> */
+				return _dtrust_pace_verify(card, data->pin_reference, data->pin1.data, data->pin1.len, tries_left);
+		}
+	}
+
+	r = iso_ops->pin_cmd(card, data, tries_left);
+
+	return r;
+}
+
+static int
 dtrust_logout(sc_card_t *card)
 {
 	sc_path_t path;
@@ -492,6 +574,7 @@ sc_get_dtrust_driver(void)
 	dtrust_ops.finish = dtrust_finish;
 	dtrust_ops.set_security_env = dtrust_set_security_env;
 	dtrust_ops.compute_signature = dtrust_compute_signature;
+	dtrust_ops.pin_cmd = dtrust_pin_cmd,
 	dtrust_ops.logout = dtrust_logout;
 
 	return &dtrust_drv;
