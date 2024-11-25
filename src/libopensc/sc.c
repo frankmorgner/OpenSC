@@ -923,7 +923,7 @@ void *sc_mem_secure_alloc(size_t len)
 		len = pages * page_size;
 	}
 
-	p = calloc(1, len);
+	p = aligned_alloc(1, len);
 	if (p == NULL) {
 		return NULL;
 	}
@@ -932,6 +932,7 @@ void *sc_mem_secure_alloc(size_t len)
 #else
 	mlock(p, len);
 #endif
+	memset(p, 0, len);
 
 	return p;
 }
