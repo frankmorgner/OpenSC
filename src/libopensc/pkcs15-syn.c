@@ -61,6 +61,9 @@ struct sc_pkcs15_emulator_handler builtin_emulators[] = {
 	{ "nqapplet",   sc_pkcs15emu_nqapplet_init_ex },
 	{ "esign",      sc_pkcs15emu_starcos_esign_init_ex },
 	{ "eOI",        sc_pkcs15emu_eoi_init_ex },
+#ifdef ENABLE_OPENSSL
+	{ "laser",	sc_pkcs15emu_laser_init_ex	},
+#endif
 	{ NULL, NULL }
 };
 
@@ -113,6 +116,7 @@ int sc_pkcs15_is_emulation_only(sc_card_t *card)
 		case SC_CARD_TYPE_SKEID_V3:
 		case SC_CARD_TYPE_EOI:
 		case SC_CARD_TYPE_EOI_CONTACTLESS:
+		case SC_CARD_TYPE_ALADDIN_LASER:
 			return 1;
 		default:
 			return 0;

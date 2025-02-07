@@ -51,6 +51,7 @@ libopensc_la_SOURCES_BASE = \
 	card-isoApplet.c card-masktech.c card-gids.c card-jpki.c \
 	card-npa.c card-esteid2018.c card-idprime.c \
 	card-edo.c card-nqApplet.c card-skeid.c card-eoi.c card-dtrust.c \
+	card-laser.c laser.c \
 	\
 	pkcs15-openpgp.c pkcs15-starcert.c pkcs15-cardos.c pkcs15-tcos.c \
 	pkcs15-actalis.c pkcs15-atrust-acos.c pkcs15-tccardos.c pkcs15-piv.c \
@@ -59,6 +60,7 @@ libopensc_la_SOURCES_BASE = \
 	pkcs15-coolkey.c pkcs15-din-66291.c pkcs15-idprime.c pkcs15-nqApplet.c \
 	pkcs15-dnie.c pkcs15-gids.c pkcs15-iasecc.c pkcs15-jpki.c pkcs15-esteid2018.c \
 	pkcs15-starcos-esign.c pkcs15-skeid.c pkcs15-eoi.c compression.c sm.c \
+	pkcs15-laser.c \
 	aux-data.c
 
 if ENABLE_CRYPTOTOKENKIT
@@ -85,6 +87,7 @@ libopensc_la_LIBADD = $(OPENPACE_LIBS) $(OPTIONAL_OPENSSL_LIBS) \
 	$(top_builddir)/src/ui/libstrings.la \
 	$(top_builddir)/src/sm/libsmeac.la \
 	$(top_builddir)/src/common/libcompat.la
+	$(top_builddir)/src/sm/libsm.la
 if WIN32
 libopensc_la_LIBADD += -lws2_32 -lshlwapi -lcomctl32
 endif
@@ -133,6 +136,7 @@ TIDY_FILES = \
 	card-isoApplet.c card-masktech.c card-jpki.c \
 	card-npa.c card-esteid2018.c card-idprime.c \
 	card-edo.c card-nqApplet.c card-skeid.c card-eoi.c card-dtrust.c \
+	card-laser.c laser.c \
 	\
 	pkcs15-openpgp.c pkcs15-cardos.c pkcs15-tcos.c \
 	pkcs15-actalis.c pkcs15-atrust-acos.c pkcs15-tccardos.c \
@@ -141,6 +145,7 @@ TIDY_FILES = \
 	pkcs15-coolkey.c pkcs15-din-66291.c pkcs15-idprime.c pkcs15-nqApplet.c \
 	pkcs15-dnie.c pkcs15-gids.c pkcs15-iasecc.c pkcs15-jpki.c pkcs15-esteid2018.c \
 	pkcs15-starcos-esign.c pkcs15-skeid.c compression.c sm.c \
+	pkcs15-laser.c \
 	aux-data.c \
 	#$(SOURCES)
 
