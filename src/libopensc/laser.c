@@ -1,3 +1,6 @@
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 #ifdef ENABLE_OPENSSL /* empty file without openssl */
 
 #include "config.h"
@@ -6,9 +9,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-#ifdef ENABLE_OPENSSL
 #include <openssl/sha.h>
-#endif
 
 #include "internal.h"
 #include "asn1.h"

@@ -1,3 +1,7 @@
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 #ifdef ENABLE_OPENSSL /* empty file without openssl */
 
 #include <errno.h>
@@ -24,6 +28,10 @@
 #define LASER_ATTRS_CERT_X509 (SC_PKCS15_TYPE_VENDOR_DEFINED | SC_PKCS15_TYPE_CERT_X509)
 #define LASER_ATTRS_CERT_X509_CMAP (SC_PKCS15_TYPE_VENDOR_DEFINED | SC_PKCS15_TYPE_CERT_X509 | LASER_PKCS15_TYPE_PRESENT_IN_CMAP)
 #define LASER_ATTRS_DATA_OBJECT (SC_PKCS15_TYPE_VENDOR_DEFINED | SC_PKCS15_TYPE_DATA_OBJECT)
+
+#ifndef min
+#define min(a, b) (a < b ? a : b)
+#endif
 
 static struct sc_aid laser_aid = {
 		{0xA0, 0x00, 0x00, 0x01, 0x64, 0x4C, 0x41, 0x53, 0x45, 0x52, 0x00, 0x01},
@@ -100,11 +108,8 @@ laser_create_pin_object(struct sc_profile *profile, struct sc_pkcs15_card *p15ca
 
 	LOG_FUNC_CALLED(ctx);
 
-	memset(tmp_buf, 0, sizeof(tmp_buf));
-	memcpy(tmp_buf, file->encoded_content + 2, min(file->encoded_content_len - 2, sizeof(tmp_buf)));
-
 	memset(label, 0, sizeof(label));
-	snprintf(label, sizeof(label) - 1, "%s (%s)", title, tmp_buf);
+	snprintf(label, sizeof(label) - 1, "%s", title);
 
 	rv = sc_bin_to_hex(file->path.value, file->path.len, tmp_buf, sizeof(tmp_buf), 0);
 	LOG_TEST_RET(ctx, rv, "bin->hex error");
@@ -170,7 +175,7 @@ laser_update_eeef(struct sc_profile *profile, struct sc_pkcs15_card *p15card, st
 
 	/* The End */
 	rv = sc_pkcs15init_update_file(profile, p15card, file, data, offs);
-	if (offs != rv)
+	if (0 > rv || offs > (size_t)rv)
 		LOG_TEST_GOTO_ERR(ctx, rv = SC_ERROR_INTERNAL, "Cannot update EEEF file");
 	rv = SC_SUCCESS;
 err:
@@ -313,8 +318,8 @@ laser_update_eeee(struct sc_profile *profile, struct sc_pkcs15_card *p15card, st
 	/* The END */
 
 	rv = sc_pkcs15init_update_file(profile, p15card, file, eeee, offs);
-	if (offs != rv)
-		LOG_TEST_GOTO_ERR(ctx, rv = SC_ERROR_INTERNAL, "Cannot update EEEE file");
+	if (0 > rv || offs > (size_t)rv)
+	    LOG_TEST_GOTO_ERR(ctx, rv = SC_ERROR_INTERNAL, "Cannot update EEEE file");
 	rv = SC_SUCCESS;
 err:
 	if(eeee) free(eeee);
@@ -1254,7 +1259,7 @@ laser_update_df_create_private_key(struct sc_profile *profile, struct sc_pkcs15_
 		LOG_TEST_GOTO_ERR(ctx, rv, "Failed to update DF: cannot delete private key attributes");
 
 	rv = sc_pkcs15init_update_file(profile, p15card, file, attrs, attrs_len);
-	if(attrs_len != rv)
+	if (0 > rv || attrs_len > (size_t)rv)
 	    LOG_TEST_GOTO_ERR(ctx, rv = SC_ERROR_INTERNAL, "Failed to create/update private key attributes file");
 
 	rv = laser_cmap_update(profile, p15card, 0, object);
@@ -1298,7 +1303,7 @@ laser_update_df_create_public_key(struct sc_profile *profile, struct sc_pkcs15_c
 		LOG_TEST_GOTO_ERR(ctx, rv, "Failed to update DF: cannot delete public key attributes");
 
 	rv = sc_pkcs15init_update_file(profile, p15card, file, attrs, attrs_len);
-	if (attrs_len != rv)
+	if (0 > rv || attrs_len > (size_t)rv)
 	    LOG_TEST_GOTO_ERR(ctx, rv = SC_ERROR_INTERNAL, "Failed to create/update public key attributes file");
 err:
 	if(file) sc_file_free(file);
@@ -1401,7 +1406,7 @@ laser_update_df_create_certificate(struct sc_profile *profile, struct sc_pkcs15_
 	LOG_TEST_GOTO_ERR(ctx, rv, "Failed to update DF: cannot delete laser certificate");
 
 	rv = sc_pkcs15init_update_file(profile, p15card, file, attrs, attrs_len);
-	if (attrs_len != rv)
+	if (0 > rv || attrs_len > (size_t)rv)
 		LOG_TEST_GOTO_ERR(ctx, rv = SC_ERROR_INTERNAL, "Failed to update laser certificate attributes file");
 
 	rv = laser_cmap_update(profile, p15card, 0, NULL);
@@ -1448,8 +1453,8 @@ laser_update_df_create_data_object(struct sc_profile *profile, struct sc_pkcs15_
 	LOG_TEST_GOTO_ERR(ctx, rv, "Failed to update DF: cannot delete laser DATA");
 
 	rv = sc_pkcs15init_update_file(profile, p15card, file, attrs, attrs_len);
-	if (attrs_len != rv)
-		LOG_TEST_GOTO_ERR(ctx, rv = SC_ERROR_INTERNAL, "Failed to update laser DATA attributes file");
+	if (0 > rv || attrs_len > (size_t)rv)
+	    LOG_TEST_GOTO_ERR(ctx, rv = SC_ERROR_INTERNAL, "Failed to update laser DATA attributes file");
 err:
 	if(file) sc_file_free(file);
 	LOG_FUNC_RETURN(ctx, rv);
@@ -1689,8 +1694,8 @@ laser_emu_update_tokeninfo(struct sc_profile *profile, struct sc_pkcs15_card *p1
 	LOG_TEST_RET(ctx, rv, "'Aladdin-TokenInfo' not defined");
 
 	rv = sc_pkcs15init_update_file(profile, p15card, file, (unsigned char *)(&lti), sizeof(lti));
-	if (0 < rv && sizeof(lti) > rv)
-		rv = SC_ERROR_INTERNAL;
+	if (0 > rv || sizeof(lti) > (size_t)rv)
+	    rv = SC_ERROR_INTERNAL;
 	LOG_TEST_RET(ctx, rv, "Cannot update TokenInfo file");
 
 	LOG_FUNC_RETURN(ctx, SC_SUCCESS);
@@ -1847,8 +1852,8 @@ laser_emu_store_certificate(struct sc_pkcs15_card *p15card,
 	file->size = attrs_len;
 
 	rv = sc_pkcs15init_update_file(profile, p15card, file, attrs, attrs_len);
-	if (attrs_len != rv)
-		LOG_TEST_GOTO_ERR(ctx, rv = SC_ERROR_INTERNAL, "Failed to create/update laser certificate attributes file");
+	if (0 > rv || attrs_len > (size_t)rv)
+	    LOG_TEST_GOTO_ERR(ctx, rv = SC_ERROR_INTERNAL, "Failed to create/update laser certificate attributes file");
 
 	info->path = file->path;
 err:
@@ -1867,7 +1872,7 @@ laser_emu_store_data_object(struct sc_pkcs15_card *p15card,
 	struct sc_file *file = NULL;
 	unsigned char *attrs = NULL;
 	size_t attrs_len = 0;
-	int rv, idx;
+	int rv = SC_SUCCESS, idx;
 
 	LOG_FUNC_CALLED(ctx);	
 
@@ -1886,8 +1891,8 @@ laser_emu_store_data_object(struct sc_pkcs15_card *p15card,
 	file->size = attrs_len;
 
 	rv = sc_pkcs15init_update_file(profile, p15card, file, attrs, attrs_len);
-	if (attrs_len != rv)
-		LOG_TEST_GOTO_ERR(ctx, rv = SC_ERROR_INTERNAL, "Failed to create/update laser DATA object attributes file");
+	if (0 > rv || attrs_len != (size_t)rv)
+	    LOG_TEST_GOTO_ERR(ctx, rv = SC_ERROR_INTERNAL, "Failed to create/update laser DATA object attributes file");
 
 	info->path = file->path;
 err:

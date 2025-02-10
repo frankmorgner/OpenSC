@@ -8,6 +8,7 @@
 #include <stdlib.h>
 #include <time.h>
 
+#define OPENSSL_SUPPRESS_DEPRECATED
 #include <openssl/bn.h>
 #include <openssl/evp.h>
 #include <openssl/pem.h>
@@ -1998,7 +1999,6 @@ _sm_decrypt_des_cbc3(struct sc_context *ctx, unsigned char *key,
 	cctx = EVP_CIPHER_CTX_new();
 	alg = sc_evp_cipher(ctx, "DES-EDE-CBC");
 	if (!EVP_DecryptInit_ex2(cctx, alg, key, icv, NULL)) {
-		sc_log_openssl(ctx);
 		EVP_CIPHER_CTX_free(cctx);
 		sc_evp_cipher_free(alg);
 		free(decrypted);
@@ -2007,7 +2007,6 @@ _sm_decrypt_des_cbc3(struct sc_context *ctx, unsigned char *key,
 	/* Disable padding, otherwise it will fail to decrypt non-padded inputs */
 	EVP_CIPHER_CTX_set_padding(cctx, 0);
 	if (!EVP_DecryptUpdate(cctx, decrypted, &tmplen, data, (int)data_len)) {
-		sc_log_openssl(ctx);
 		EVP_CIPHER_CTX_free(cctx);
 		sc_evp_cipher_free(alg);
 		free(decrypted);
@@ -2016,7 +2015,6 @@ _sm_decrypt_des_cbc3(struct sc_context *ctx, unsigned char *key,
 	decrypted_len = tmplen;
 
 	if (!EVP_DecryptFinal_ex(cctx, decrypted + decrypted_len, &tmplen)) {
-		sc_log_openssl(ctx);
 		EVP_CIPHER_CTX_free(cctx);
 		sc_evp_cipher_free(alg);
 		free(decrypted);
@@ -2099,7 +2097,6 @@ _sm_encrypt_des_cbc3(struct sc_context *ctx, unsigned char *key,
 	cctx = EVP_CIPHER_CTX_new();
 	alg = sc_evp_cipher(ctx, "DES-EDE-CBC");
 	if (!EVP_EncryptInit_ex2(cctx, alg, key, icv, NULL)) {
-		sc_log_openssl(ctx);
 		free(*out);
 		free(data);
 		EVP_CIPHER_CTX_free(cctx);
@@ -2109,7 +2106,6 @@ _sm_encrypt_des_cbc3(struct sc_context *ctx, unsigned char *key,
 	/* Disable padding, otherwise it will fail to decrypt non-padded inputs */
 	EVP_CIPHER_CTX_set_padding(cctx, 0);
 	if (!EVP_EncryptUpdate(cctx, *out, &tmplen, data, (int)data_len)) {
-		sc_log_openssl(ctx);
 		free(*out);
 		free(data);
 		EVP_CIPHER_CTX_free(cctx);
@@ -2119,7 +2115,6 @@ _sm_encrypt_des_cbc3(struct sc_context *ctx, unsigned char *key,
 	*out_len = tmplen;
 
 	if (!EVP_EncryptFinal_ex(cctx, *out + *out_len, &tmplen)) {
-		sc_log_openssl(ctx);
 		free(*out);
 		free(data);
 		EVP_CIPHER_CTX_free(cctx);

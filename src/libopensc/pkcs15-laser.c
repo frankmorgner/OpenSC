@@ -1,20 +1,23 @@
-#include "config.h"
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
 
-#include "internal.h"
-#include "pkcs15.h"
-#include "cardctl.h"
+#include "libopensc/log.h"
+#include "libopensc/cards.h"
+#include "libopensc/pkcs15.h"
+#include "libopensc/cardctl.h"
 #include "pkcs11/pkcs11.h"
-#include "aux-data.h"
+#include "libopensc/aux-data.h"
+#include "libopensc/laser.h"
 #include "common/compat_strlcpy.h"
 
 #ifdef ENABLE_OPENSSL /* empty file without openssl */
 
 #include <openssl/sha.h>
-#include "laser.h"
 
 #define PATH_APPLICATION	"3F003000"
 #define PATH_TOKENINFO		"3F003000C000"
@@ -412,6 +415,7 @@ _create_data_object(struct sc_pkcs15_card * p15card, const char* path, unsigned 
 	size_t len;
 	unsigned char sha1[SHA_DIGEST_LENGTH], sha1_attr[SHA_DIGEST_LENGTH];
 	int rv;
+	unsigned char hash_exists = 0;
 
 	LOG_FUNC_CALLED(ctx);
 
@@ -430,7 +434,6 @@ _create_data_object(struct sc_pkcs15_card * p15card, const char* path, unsigned 
 	if (len < 11)	/* header 7 bytes, tail 4 bytes */
 		LOG_TEST_GOTO_ERR(ctx, SC_ERROR_INVALID_DATA, "data object file is too short");
 
-	unsigned char hash_exists = 0;
 	rv = laser_attrs_data_object_decode(ctx, &obj, &info, data + 7, len - 11, &hash_exists);
 	LOG_TEST_GOTO_ERR(ctx, rv, "Decode data object error.");
 
@@ -663,20 +666,16 @@ sc_pkcs15emu_laser_init(struct sc_pkcs15_card * p15card)
 	struct sc_path path;
 	unsigned char *buf = NULL;
 	size_t buflen = 0;
-	int rv;
+	int rv = SC_SUCCESS;
 	const size_t labelSize = 32;
 	const size_t manufactureIdSize = 32;
 	const size_t modelSize = 16;
 	const size_t serialNumberSize = 16;
-	const size_t flagsSize = sizeof(CK_FLAGS);
-	const size_t countersSize = sizeof(CK_ULONG) * 10;
-	const size_t versionSize = 4;
+	const size_t flagsSize = 4;
+	const size_t countersSize = 4 * 10;
 	size_t idx = 0;
 
 	LOG_FUNC_CALLED(ctx);
-
-	if (labelSize + manufactureIdSize + modelSize + serialNumberSize + flagsSize + countersSize + versionSize > LASER_TOKEN_INFO_LENGTH)
-		LOG_TEST_GOTO_ERR(ctx, SC_ERROR_INTERNAL, "Laser info structs incorrectly formed");
 
 	sc_format_path(PATH_TOKENINFO, &path);
 	rv = sc_pkcs15_read_file(p15card, &path, &buf, &buflen, 0);
