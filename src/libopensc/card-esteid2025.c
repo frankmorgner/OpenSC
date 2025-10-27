@@ -170,7 +170,7 @@ esteid_get_pin_info(sc_card_t *card, struct sc_pin_cmd_data *data)
 	tag += taglen;
 	tag = sc_asn1_find_tag(card->ctx, tag, apdu.resplen - (tag - apdu_resp), 0xDF2F, &taglen);
 	if (tag != NULL && taglen == 1 && tag[0] == 0x00) {
-		data->pin1.logged_in |= SC_PIN_STATE_NEEDS_CHANGE;
+		data->pin1.logged_in = SC_PIN_STATE_NEEDS_CHANGE;
 	}
 	LOG_FUNC_RETURN(card->ctx, SC_SUCCESS);
 }
