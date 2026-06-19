@@ -2023,7 +2023,7 @@ myeid_enc_dec_sym(struct sc_card *card, const u8 *data, size_t datalen,
 		else
 			apdu_datalen = len;
 
-		if (cbc && len > apdu_datalen)
+		if (cbc)
 			apdu.cla = 0x10;
 
 		len -= apdu_datalen;
@@ -2091,6 +2091,26 @@ myeid_enc_dec_sym(struct sc_card *card, const u8 *data, size_t datalen,
 		memcpy(priv->sym_crypt_buffer, data, datalen);
 	sc_log(ctx, "return data len = %zu", return_len);
 	*outlen = return_len;
+
+	/* finally, send an APDU to the card to mark the end of the command
+	 * chaining in case of CBC, ignoring the response */
+	if (cbc) {
+		if (!decipher)
+			sc_format_apdu(card, &apdu, SC_APDU_CASE_2_SHORT, 0x2A, 0x84, 0x80);
+		else
+			sc_format_apdu(card, &apdu, SC_APDU_CASE_2_SHORT, 0x2A, 0x80, 0x84);
+		apdu.cla = 0;
+
+		apdu.le = max_apdu_datalen;
+		apdu.lc = 0;
+		apdu.datalen = 0;
+		apdu.data = NULL;
+		apdu.resplen = sizeof(rbuf);
+		apdu.resp = rbuf;
+
+		sc_transmit_apdu(card, &apdu);
+	}
+
 	return SC_SUCCESS;
 }
 
