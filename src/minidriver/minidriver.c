@@ -3097,8 +3097,6 @@ md_dialog_perform_pin_operation(PCARD_DATA pCardData, int operation, struct sc_p
 	if (!displayUI) {
 		rv = md_dialog_perform_pin_operation_thread(parameter);
 		SecureZeroMemory(parameter, sizeof(parameter));
-		if (hComctl)
-			FreeLibrary(hComctl);
 		return rv;
 	}
 
@@ -3201,8 +3199,6 @@ md_dialog_perform_pin_operation(PCARD_DATA pCardData, int operation, struct sc_p
 	LocalFree((WCHAR *) tc.pszContent);
 
 	SecureZeroMemory(parameter, sizeof(parameter));
-
-	FreeLibrary(hComctl);
 
 	return (int) result;
 }
